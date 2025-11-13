@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import ArrayVisualizer from './components/ArrayVisualizer.tsx';
 import Controls from './components/Controls.tsx';
-import { getMergeSortSteps, applyStep } from './algorithms/sorting.ts';
+import { getMergeSortSteps, applyStep, getQuickSortSteps } from './algorithms/sorting.ts';
 import type { Step } from './types.ts';
 import './index.css';
 
@@ -19,7 +19,9 @@ export default function App() {
   const [playing, setPlaying] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(-1);
   const [speed, setSpeed] = useState<number>(1);
-
+  const [algorithm, setAlgorithm] = useState<'merge' | 'quick'>('merge');
+  const originalArrayRef = useRef<number[] | null>(null);
+  
   // reset everything when array size changes
   useEffect(() => {
     const a = generateRandomArray(size);
@@ -30,6 +32,16 @@ export default function App() {
     setPlaying(false);
     playingRef.current = false;
   }, [size]);
+
+  // reset steps when algorithm changes
+  useEffect(() => {
+    stepsRef.current = [];
+    stepIndexRef.current = 0;
+    setCurrentStepIndex(-1);
+    originalArrayRef.current = null;
+    setPlaying(false);
+    playingRef.current = false;
+  }, [algorithm]);
 
   function onGenerate() {
     const a = generateRandomArray(size);
@@ -42,7 +54,11 @@ export default function App() {
   }
 
   function loadAlgorithm() {
-    stepsRef.current = getMergeSortSteps(array.slice()); // make a copy so we don't mess with the original
+    if (algorithm === 'merge') {
+      stepsRef.current = getMergeSortSteps(array.slice()); // make a copy so we don't mess with the original
+    } else {
+      stepsRef.current = getQuickSortSteps(array.slice());
+    }
     stepIndexRef.current = 0;
     setCurrentStepIndex(0);
   }
@@ -102,20 +118,24 @@ export default function App() {
   }
 
   // keep a copy of the original array so we can step backwards properly
-  const originalArrayRef = useRef<number[] | null>(null);
   function loadAlgorithmWithSnapshot() {
     originalArrayRef.current = array.slice();
-    stepsRef.current = getMergeSortSteps(array.slice());
+    if (algorithm === 'merge') {
+      stepsRef.current = getMergeSortSteps(originalArrayRef.current.slice());
+    } else {
+      stepsRef.current = getQuickSortSteps(originalArrayRef.current.slice());
+    }
     stepIndexRef.current = 0;
     setCurrentStepIndex(0);
   }
+  
 
-  // make sure we save the snapshot when play starts
+  // make sure we save the snapshot when play starts or algorithm changes
   useEffect(() => {
     if (playing && originalArrayRef.current === null) {
       loadAlgorithmWithSnapshot();
     }
-  }, [playing]); // eslint-disable-line
+  }, [playing, algorithm]); // eslint-disable-line
 
   // step backwards by going back to the original and replaying up to the target
   function stepBackFixed() {
@@ -136,7 +156,7 @@ export default function App() {
 
   return (
     <div style={{ padding: 20, maxWidth: 1000, margin: '0 auto' }}>
-      <h2>Algorithm Visualizer — Merge Sort (TypeScript + D3)</h2>
+      <h2>Algorithm Visualizer — {algorithm === 'merge' ? 'Merge' : 'Quick'} Sort (TypeScript + D3)</h2>
       <Controls
         onGenerate={onGenerate}
         onPlayPause={playPause}
@@ -147,6 +167,8 @@ export default function App() {
         setSpeed={setSpeed}
         size={size}
         setSize={setSize}
+        algorithm={algorithm}
+        setAlgorithm={setAlgorithm}
       />
       <div style={{ marginTop: 18 }}>
         <ArrayVisualizer array={array} currentStepIndex={currentStepIndex} steps={stepsRef.current} />
@@ -154,7 +176,7 @@ export default function App() {
 
       <div style={{ marginTop: 12 }}>
         <small>
-          Tips: click <b>Generate</b> to create a new array. <b>Play</b> runs Merge Sort recording overwrite steps.
+          Tips: click <b>Generate</b> to create a new array. <b>Play</b> runs {algorithm === 'merge' ? 'Merge' : 'Quick'} Sort.
         </small>
       </div>
     </div>
