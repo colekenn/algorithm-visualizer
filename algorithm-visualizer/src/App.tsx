@@ -156,7 +156,7 @@ export default function App() {
 
   return (
     <div style={{ padding: 20, maxWidth: 1000, margin: '0 auto' }}>
-      <h2>Algorithm Visualizer — {algorithm === 'merge' ? 'Merge' : 'Quick'} Sort (TypeScript + D3)</h2>
+      <h2>Algorithm Visualizer — {algorithm === 'merge' ? 'Merge' : 'Quick'})</h2>
       <Controls
         onGenerate={onGenerate}
         onPlayPause={playPause}
